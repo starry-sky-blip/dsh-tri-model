@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Multi-model pipeline",
+    "description": "Wire several vendors' models into one pipeline: plan, execute, review, rework. Endpoints, keys, protocols, models and layers all live in Settings."
+  }
+}

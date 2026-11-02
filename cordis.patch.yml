@@ -1,0 +1,52 @@
+- insert:
+    - id: tri-model
+      name: dsh-tri-model
+      config:
+        endpoints:
+          - id: ark-plan
+            label: 火山方舟（plan v3）
+            baseUrl: https://ark.cn-beijing.volces.com/api/plan/v3
+            protocol: openai
+            apiKeyRef: tri-model.ark-plan
+        models:
+          - id: deepseek-flash
+            label: DeepSeek V4.1 Flash
+            model: DeepSeek-V4.1-Flash
+            endpoint: ark-plan
+          - id: kimi-pro
+            label: Kimi K3.1 Pro
+            model: Kimi-K3.1-Pro
+            endpoint: ark-plan
+            caps:
+              temperature: 1
+          - id: glm-flash
+            label: GLM 5.3 Flash
+            model: GLM-5.3-Flash
+            endpoint: ark-plan
+            caps:
+              minOutputTokens: 12000
+        layers:
+          - id: plan
+            kind: plan
+            model: kimi-pro
+            enabled: true
+            system: 你是规划者。把任务拆成可执行的步骤，指出风险与验收标准。不要写成品。
+            template: "{{task}}"
+          - id: draft
+            kind: execute
+            model: deepseek-flash
+            enabled: true
+            system: 你是执行者。按规划把成品写完整，直接给结果，不要复述要求。
+            template: "任务：\n{{task}}\n\n规划：\n{{plan}}"
+          - id: review
+            kind: review
+            model: glm-flash
+            enabled: true
+            system: 你是审查者。只挑真正的问题，能过就过。只输出 JSON。
+            template: "任务：\n{{task}}\n\n待审内容：\n{{draft}}"
+            gate:
+              maxRounds: 2
+              reworkTo: draft
+        settings:
+          maxRounds: 2
+          timeoutMs: 120000

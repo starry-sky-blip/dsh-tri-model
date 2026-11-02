@@ -1,0 +1,65 @@
+{
+  "name": "dsh-tri-model",
+  "version": "1.0.2",
+  "type": "module",
+  "description": "多模型分层协同：规划 → 执行 → 审查 → 自动返工。端点、协议、模型与层级都在设置面板里配。",
+  "description_en": "Layered multi-model collaboration: plan, execute, review, rework. Endpoints, protocols, models and layers configured in Settings.",
+  "license": "MIT",
+  "icon": "icon.svg",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/starry-sky-blip/dsh-tri-model.git"
+  },
+  "homepage": "https://github.com/starry-sky-blip/dsh-tri-model#readme",
+  "bugs": {
+    "url": "https://github.com/starry-sky-blip/dsh-tri-model/issues"
+  },
+  "author": "starry-sky-blip (https://github.com/starry-sky-blip)",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib/*.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "LICENSE",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-api-remotes"
+      ]
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "deepseek-harness",
+    "tri-model",
+    "multi-model",
+    "pipeline",
+    "slash-command",
+    "settings"
+  ],
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.0-rc.1 <0.3.0-0"
+  }
+}
