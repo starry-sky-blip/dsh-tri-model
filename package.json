@@ -1,6 +1,6 @@
 {
   "name": "dsh-tri-model",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "description": "多模型分层协同：规划 → 执行 → 审查 → 自动返工。端点、协议、模型与层级都在设置面板里配。",
   "description_en": "Layered multi-model collaboration: plan, execute, review, rework. Endpoints, protocols, models and layers configured in Settings.",
@@ -45,7 +45,7 @@
       ]
     }
   },
-  "dependencies": {
+  "peerDependencies": {
     "@deepseek-ai/schemastery": "^3.18.1"
   },
   "keywords": [

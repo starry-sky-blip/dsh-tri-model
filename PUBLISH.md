@@ -1,11 +1,12 @@
 # 发布清单
 
-包名 `dsh-tri-model`。这个名下原本有一个同账号的占位版本 `0.0.0-stage`（早先占位留下），`1.0.2` 已于 2026-11-02 正式发布。
+包名 `dsh-tri-model`。这个名下原本有一个同账号的占位版本 `0.0.0-stage`（早先占位留下），`1.0.2` 于 2026-11-02 首发，`1.0.3` 于 2026-11-03 发布（依赖改 peer + 补截图）。
 
 ## 已经就绪
 
-- `package.json`：无 `private`，`license: MIT`，`icon`，`engines.dsh: >=0.2.0-rc.1 <0.3.0-0`，`dependencies.@deepseek-ai/schemastery ^3.18.1`
-- `files` 白名单逐个核对过；`node_modules` 不会被打进包（npm 永远不打），所以 schemastery 必须是真依赖
+- `package.json`：无 `private`，`license: MIT`，`icon`，`engines.dsh: >=0.2.0-rc.1 <0.3.0-0`，官方包声明为 `peerDependencies.@deepseek-ai/schemastery ^3.18.1`（宿主提供，避免 profile 里出现重复运行时）
+- `files` 白名单逐个核对过；`node_modules` 不会被打进包
+- 截图放在本仓库 `assets/`，由 `screenshots.json` 声明（市场详情页读取，1–8 张、相对路径）
 - `LICENSE`（MIT）、`README.md`、`locale/{zh,en}.json`、`icon.svg` 都在发布清单里
 - 打包 → 干净目录安装 → 加载冒烟：4 个工具 + `/tri` 命令 + 设置页注册都正常（见下）
 
@@ -20,6 +21,17 @@
 | GitHub | https://github.com/starry-sky-blip/dsh-tri-model（`165a6ea`） |
 
 `package.json` 的 `repository` / `homepage` / `bugs` / `author` 已补齐。
+
+## 已发布（2026-11-03 · 1.0.3）
+
+| 项 | 值 |
+|---|---|
+| 改动 | `@deepseek-ai/schemastery` 从 `dependencies` 移到 `peerDependencies`（模板推荐项）；新增 `assets/` 两张图 + `screenshots.json` |
+| 为什么 | 官方 `@deepseek-ai/*` 由宿主解析，声明成依赖会在 profile 里装出第二份运行时；code-review 等成熟插件也是纯 peer 风格 |
+| 验证 | `npm pack` 13 个文件 / 32721 B；`node --check` 0；`import()` 冒烟 `LOAD OK Config,apply,inject` |
+| 兼容 | engines 未变（`>=0.2.0-rc.1 <0.3.0-0`），1.0.2 用户直接升 1.0.3 无配置变化 |
+
+截图规格（contributing.md）：1–8 张、必须是 GitHub 托管的位图、相对路径不能以 `/` 开头或含 `..`；不声明的话市场会从 README 抽图。
 
 ## 剩余一步：awesome 收录
 

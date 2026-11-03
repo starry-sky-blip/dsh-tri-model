@@ -4,6 +4,11 @@
 
 这是一个 DSH 原生插件（bundle），不是 MCP 连接器：Host 半边注册四个工具，Client 半边在设置面板里画一整页。
 
+![流水线：规划 → 执行 → 审查 → 返工](assets/pipeline-overview.png)
+
+![在设置面板里配，四个工具 + /tri 直接用](assets/configure-and-tools.png)
+
+
 ## 装上
 
 ```powershell
