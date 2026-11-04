@@ -5,8 +5,8 @@ import { join } from 'node:path'
 
 import { Config, DEFAULT_ENDPOINTS, DEFAULT_MODELS, DEFAULT_LAYERS, describeConfig, findEndpoint, normalizeConfig, validateConfig } from './lib/config.js'
 import { doctor, reviewWith, runPipeline } from './lib/engine.js'
+import { describeModels } from './lib/models.js'
 import { ACTIONS, applyConfigAction } from './lib/ops.js'
-import { buildModelsRequest, parseModels } from './lib/protocols.js'
 
 export { Config }
 
@@ -427,55 +427,9 @@ export function apply(ctx, config) {
     )
   }
 
-  /** 逐个端点问服务商要模型清单；不支持 /models 的端点如实说明。 */
+/* ---------- 摘录模型清单 ---------- */
+
   async function modelLines(cfg, only) {
-    const targets = cfg.endpoints.filter((endpoint) => !only || endpoint.id === only)
-    if (!targets.length) return `没有找到端点${only ? `「${only}」` : ''}。可用端点：${cfg.endpoints.map((e) => e.id).join('、') || '（无）'}`
-
-    const lines = [`配置 namespace：${NS} · 端点 ${cfg.endpoints.length}`]
-    for (const endpoint of targets) {
-      const protocol = endpoint.protocol || 'openai'
-      const key = await resolveKey(endpoint)
-      if (!key) {
-        lines.push('', `✗ ${endpoint.id} · ${protocol} · 没有可用密钥（先保存密钥或设置环境变量 ${envName(endpoint)}）`)
-        continue
-      }
-
-      const request = buildModelsRequest({ protocol, endpoint, key })
-      const started = Date.now()
-      try {
-        const response = await fetch(request.url, {
-          method: 'GET',
-          headers: request.headers,
-          signal: AbortSignal.timeout(15000),
-        })
-        const elapsed = Date.now() - started
-        const body = await response.text()
-        if (!response.ok) {
-          lines.push('', `✗ ${endpoint.id} · ${protocol} · HTTP ${response.status}（${elapsed}ms）`)
-          const detail = body.trim()
-          if (detail) lines.push(`  ${detail.slice(0, 220).replace(/\s+/g, ' ')}`)
-          else lines.push('  （服务商没有返回内容）')
-          if (response.status === 404) lines.push('  该端点没有 /models 接口，去服务商文档核对模型 ID。')
-          if (response.status === 401 || response.status === 403) lines.push('  密钥对不上这个端点，先确认密钥属于这家服务商。')
-          continue
-        }
-        let json
-        try {
-          json = JSON.parse(body)
-        } catch {
-          lines.push('', `✗ ${endpoint.id} · ${protocol} · 回包不是 JSON（${elapsed}ms）`)
-          continue
-        }
-        const ids = parseModels(protocol, json)
-        lines.push('', `✓ ${endpoint.id} · ${protocol} · ${ids.length} 个模型（${elapsed}ms）`)
-        if (!ids.length) lines.push('  接口可用但没返回模型，检查密钥权限。')
-        for (const id of ids.slice(0, 200)) lines.push(`  ${id}`)
-        if (ids.length > 200) lines.push(`  …另有 ${ids.length - 200} 个`)
-      } catch (error) {
-        lines.push('', `✗ ${endpoint.id} · ${protocol} · ${String(error?.message || error).slice(0, 200)}`)
-      }
-    }
-    return lines.join('\n')
+    return describeModels({ endpoints: cfg.endpoints, resolveKey, only, namespace: NS })
   }
 }

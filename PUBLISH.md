@@ -81,6 +81,11 @@ description:
 
 **动过设置页组件再跑 `node scripts/combo-test.mjs`**：用桩 React 驱动真实源码，验证「可输入下拉」的展开/收起/回填/失焦关闭这条交互链（13 项断言），页面渲染测试跑不出这类行为。
 
+**动过命令或网络逻辑跑 `npm test`**（= preflight + models-test + command-test + combo-test）：
+
+- `scripts/models-test.mjs` 起本地 HTTP 服务，把 `/tri-models` 的每条分支都打一遍：200 列表、gemini 的 `models/` 前缀、anthropic 的 `x-api-key`、404 空回包、401 带正文、非 JSON、空列表、230 条截断、120ms 超时、缺密钥、`only` 过滤、未知端点。
+- `scripts/command-test.mjs` 用假 ctx 把 `index.js` 整个 `apply()` 起来，真调 `/tri`、`/tri-models`、`/tri-doctor` 的 handler，断言返回值、排进会话的那条消息（`role: 'user'`、`source.kind: 'tri-model'`、任务原文没被改写），以及没有会话通路时的同步输出。
+
 ```powershell
 $node = "$env:APPDATA\nvm\v22.19.0\node.exe"
 $pnpm = 'D:\浏览器安装\deepseek\resources\runtime\primary-runtime\dependencies\pnpm\bin\pnpm.cjs'
