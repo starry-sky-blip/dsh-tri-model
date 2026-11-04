@@ -36,8 +36,10 @@ dsh plugin --profile desktop add "file:D:\path\to\tri-model"
 
 配端点和模型时的几个省事设计：
 
-- 点「+ 添加端点」先选供应商（火山方舟的两套入口、DeepSeek 官方、Moonshot、OpenAI、OpenRouter、Gemini、Anthropic、自建/其他），地址、协议、路径覆盖一次填好，密钥引用也跟着生成。
+- 点「+ 添加端点」先选供应商（17 个预设：火山方舟的两套入口、DeepSeek 官方、智谱 GLM、Moonshot、阿里百炼、硅基流动、百度千帆、OpenAI、Anthropic、Gemini、xAI、Mistral、Groq、OpenRouter、本地 Ollama、自建/其他），地址、协议、路径覆盖一次填好，密钥引用也跟着生成。
+- 「真实模型名」下面会按端点地址列出这家供应商常用的模型 ID（`deepseek-v4.1-flash`、`kimi-k3.1-pro` 这种小写带版本号的写法），点一下就填进去，省得记 ID。
 - 卡片默认折叠，一行摘要就够看：名称、协议、地址、密钥是否已配（端点）；名称、挂的端点、能力标记（模型）；序号、类型、用哪个模型、返工门禁（层级）。点标题展开改字段，段头有「展开全部 / 收起全部」。
+- 下拉里选模型/端点时会带上显示名（`Kimi K3.1 Pro · kimi-pro`），两个同类模型不会混。
 - 标识（`id`）跟着名称自动生成（`DeepSeek 官方` → `deepseek`，重名自动加后缀），手改过就不再跟随。
 - 删端点或模型时，如果还有下层在引用它，会先提示「N 个模型在用」，确认后才删——避免删完流水线静默断掉。
 
@@ -103,4 +105,4 @@ locale/{zh,en}.json
 - 层级目前严格顺序执行，没有扇出/并行。
 - 审查层解析 JSON 时，模型不听话就按「文本里找 PASS/FAIL」兜底。
 - 请求是一次性返回（`stream: false`）：跑的过程中只有工具卡在计时，没有逐字输出；一层慢就整条慢（`settings.timeoutMs` 控制单次上限）。
-- 设置面板里没有「测试连接」按钮：浏览器的请求会被 CORS 挡住，宿主的 RPC 也只对编译期生成的 remote 开放，手写插件注册不了。连通性用 `/tri-doctor` 或 `tri_doctor` 代替。
+- 设置面板里没有「测试连接」按钮：浏览器的请求会被 CORS 挡住，宿主的 RPC 也只对编译期生成的 remote 开放，手写插件注册不了。面板底部因此常驻一行提示「保存后发 `/tri-doctor`」，连通性用 `/tri-doctor` 或 `tri_doctor` 验证。

@@ -12,16 +12,115 @@ window.__ModuleLoader__.load({
       { value: 'gemini', label: 'gemini' },
     ]
     const KINDS = ['plan', 'execute', 'review', 'judge', 'route', 'custom']
-    /** 常见供应商：只填地址和协议，密钥仍然由用户自己贴。 */
+    /** 常见供应商：只填地址和协议，密钥仍然由用户自己贴。models 只是候选 ID，点一下就填进「真实模型名」。 */
     const PRESETS = [
-      { id: 'ark-plan', label: '火山方舟 · Coding Plan', baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3', protocol: 'openai' },
-      { id: 'ark', label: '火山方舟 · 标准 v3', baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', protocol: 'openai' },
-      { id: 'deepseek', label: 'DeepSeek 官方', baseUrl: 'https://api.deepseek.com/v1', protocol: 'openai' },
-      { id: 'moonshot', label: 'Moonshot · Kimi', baseUrl: 'https://api.moonshot.cn/v1', protocol: 'openai' },
-      { id: 'openai', label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', protocol: 'openai' },
+      {
+        id: 'ark-plan',
+        label: '火山方舟 · Coding Plan',
+        baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3',
+        protocol: 'openai',
+        models: ['deepseek-v4.1-flash', 'kimi-k3.1-pro', 'glm-5.3-flash', 'doubao-seed-1.6', 'deepseek-v4.1'],
+      },
+      {
+        id: 'ark',
+        label: '火山方舟 · 标准 v3',
+        baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+        protocol: 'openai',
+        models: ['deepseek-v3-1-250821', 'doubao-seed-1-6-250615', 'doubao-1-5-pro-32k-250115', 'kimi-k2-250711', 'glm-4-5-250414'],
+      },
+      {
+        id: 'deepseek',
+        label: 'DeepSeek 官方',
+        baseUrl: 'https://api.deepseek.com/v1',
+        protocol: 'openai',
+        models: ['deepseek-chat', 'deepseek-reasoner'],
+      },
+      {
+        id: 'zhipu',
+        label: '智谱 GLM',
+        baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+        protocol: 'openai',
+        models: ['glm-4.6', 'glm-4.5-air', 'glm-4.5-flash'],
+      },
+      {
+        id: 'moonshot',
+        label: 'Moonshot · Kimi',
+        baseUrl: 'https://api.moonshot.cn/v1',
+        protocol: 'openai',
+        models: ['kimi-latest', 'kimi-k2-turbo-preview', 'moonshot-v1-8k', 'moonshot-v1-128k'],
+      },
+      {
+        id: 'dashscope',
+        label: '阿里百炼',
+        baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        protocol: 'openai',
+        models: ['qwen-max', 'qwen-plus', 'qwen3-coder-plus', 'qwen3-max'],
+      },
+      {
+        id: 'siliconflow',
+        label: '硅基流动',
+        baseUrl: 'https://api.siliconflow.cn/v1',
+        protocol: 'openai',
+        models: ['deepseek-ai/DeepSeek-V3.2', 'Qwen/Qwen3-235B-A22B-Instruct-2507', 'moonshotai/Kimi-K2-Instruct'],
+      },
+      {
+        id: 'qianfan',
+        label: '百度千帆',
+        baseUrl: 'https://qianfan.baidubce.com/v2',
+        protocol: 'openai',
+        models: ['ernie-4.5-turbo-128k', 'ernie-x1-turbo-32k'],
+      },
+      {
+        id: 'openai',
+        label: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+        protocol: 'openai',
+        models: ['gpt-5.1', 'gpt-5.1-mini', 'gpt-5', 'o4-mini'],
+      },
+      {
+        id: 'anthropic',
+        label: 'Anthropic',
+        baseUrl: 'https://api.anthropic.com',
+        protocol: 'anthropic',
+        path: '/v1/messages',
+        models: ['claude-opus-4-1', 'claude-sonnet-4-5', 'claude-haiku-4-5'],
+      },
+      {
+        id: 'gemini',
+        label: 'Google Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        protocol: 'gemini',
+        models: ['gemini-3-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'],
+      },
+      {
+        id: 'xai',
+        label: 'xAI Grok',
+        baseUrl: 'https://api.x.ai/v1',
+        protocol: 'openai',
+        models: ['grok-4', 'grok-3-mini'],
+      },
+      {
+        id: 'mistral',
+        label: 'Mistral',
+        baseUrl: 'https://api.mistral.ai/v1',
+        protocol: 'openai',
+        models: ['mistral-large-latest', 'codestral-latest'],
+      },
+      {
+        id: 'groq',
+        label: 'Groq',
+        baseUrl: 'https://api.groq.com/openai/v1',
+        protocol: 'openai',
+        models: ['llama-3.3-70b-versatile', 'qwen-2.5-coder-32b'],
+      },
       { id: 'openrouter', label: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1', protocol: 'openai' },
-      { id: 'gemini', label: 'Google Gemini', baseUrl: 'https://generativelanguage.googleapis.com', protocol: 'gemini' },
-      { id: 'anthropic', label: 'Anthropic', baseUrl: 'https://api.anthropic.com', protocol: 'anthropic', path: '/v1/messages' },
+      {
+        id: 'ollama',
+        label: '本地 Ollama',
+        baseUrl: 'http://127.0.0.1:11434/v1',
+        protocol: 'openai',
+        models: ['qwen3:8b', 'llama3.3:70b'],
+      },
       { id: 'custom', label: '', baseUrl: '', protocol: 'openai' },
     ]
 
@@ -109,6 +208,7 @@ window.__ModuleLoader__.load({
       noChange: '没有改动',
       resetConfirm: '放弃未保存的改动？',
       keyStored: '密钥在保存时写入 DSH 凭据库，设置文件里只留引用名。',
+      doctorHint: '测连接：保存后在本会话发 /tri-doctor，插件会挨个打一次各端点上的模型，把延迟表贴回来。',
       pending: '项待修',
       charUnit: ' 字',
       presetHint: '选一个预设，地址和协议自动填好，只剩密钥要你填。',
@@ -119,7 +219,7 @@ window.__ModuleLoader__.load({
       usedByModel: '{n} 个层级在用这个模型，删掉后它们会失效。',
       confirmDelete: '仍然删除',
       cancel: '取消',
-      autoId: '标识随名称自动生成，也可以手改',
+      autoId: '自动生成，可手改',
     }
 
     const en = {
@@ -186,6 +286,7 @@ window.__ModuleLoader__.load({
       noChange: 'No changes',
       resetConfirm: 'Discard unsaved changes?',
       keyStored: 'Keys are written to DSH credentials on save; the settings file keeps only a reference.',
+      doctorHint: 'Connection check: after saving, send /tri-doctor in this session and the plugin will ping every model on every endpoint and report a latency table.',
       pending: ' to fix',
       charUnit: ' chars',
       presetHint: 'Pick a preset; URL and protocol are filled in, only the key is yours.',
@@ -196,7 +297,7 @@ window.__ModuleLoader__.load({
       usedByModel: '{n} layer(s) use this model and will break.',
       confirmDelete: 'Delete anyway',
       cancel: 'Cancel',
-      autoId: 'The id follows the name until you edit it yourself',
+      autoId: 'auto, editable',
     }
     const DICT = { zh, en }
 
@@ -236,9 +337,12 @@ window.__ModuleLoader__.load({
 .tm-chip.warn{color:var(--dsw-alias-state-warn-primary);border-color:currentColor}
 .tm-chip.err{color:var(--dsw-alias-state-error-primary);border-color:currentColor}
 .tm-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px 12px}
+.tm-fields.two{grid-template-columns:repeat(auto-fit,minmax(196px,1fr))}
 .tm-field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .tm-field.wide{grid-column:1/-1}
 .tm-label{font-size:11px;color:var(--dsw-alias-label-secondary);display:flex;align-items:baseline;gap:5px;min-width:0}
+.tm-label-text{flex:none;white-space:nowrap}
+.tm-hint{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tm-note{font-size:11px;color:var(--dsw-alias-label-secondary);font-weight:400}
 .tm-input,.tm-select,.tm-area{font:inherit;font-size:12px;width:100%;padding:6px 8px;border-radius:7px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);outline:none;transition:border-color .12s}
 .tm-input:hover,.tm-select:hover,.tm-area:hover{border-color:var(--dsw-alias-border-l2)}
@@ -272,6 +376,11 @@ window.__ModuleLoader__.load({
 .tm-preset-row{display:flex;flex-wrap:wrap;gap:7px}
 .tm-preset{font:inherit;font-size:11.5px;line-height:1;padding:6px 10px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);cursor:pointer;white-space:nowrap}
 .tm-preset:hover{border-color:var(--dsw-alias-brand-primary)}
+.tm-preset.active{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
+.tm-field-wrap{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tm-tip{margin:0;line-height:1.6;color:var(--dsw-alias-label-secondary)}
+.tm-suggest{display:flex;flex-wrap:wrap;gap:6px}
+.tm-suggest .tm-preset{font-size:11px;padding:4px 8px;color:var(--dsw-alias-label-secondary)}
 .tm-confirm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--dsw-alias-state-warn-primary);border-radius:8px;font-size:12px}
 .tm-confirm-text{color:var(--dsw-alias-label-primary)}
 .tm-confirm .tm-btn{padding:5px 9px;font-size:11.5px}
@@ -376,7 +485,7 @@ window.__ModuleLoader__.load({
       return h(
         'label',
         { className: `tm-field${props.wide ? ' wide' : ''}` },
-        h('span', { className: 'tm-label' }, props.label, props.hint ? h('span', { className: 'tm-note' }, props.hint) : null),
+        h('span', { className: 'tm-label' }, h('span', { className: 'tm-label-text' }, props.label), props.hint ? h('span', { className: 'tm-note tm-hint' }, props.hint) : null),
         props.children,
       )
     }
@@ -726,8 +835,21 @@ window.__ModuleLoader__.load({
       const endpoints = draft.endpoints || []
       const models = draft.models || []
       const layers = draft.layers || []
-      const endpointOptions = endpoints.map((ep) => ({ value: ep.id, label: ep.id }))
-      const modelOptions = models.map((md) => ({ value: md.id, label: md.id }))
+      const endpointOptions = endpoints.map((ep) => ({ value: ep.id, label: ep.label && ep.label !== ep.id ? `${ep.label} · ${ep.id}` : ep.id }))
+      const modelOptions = models.map((md) => ({ value: md.id, label: md.label && md.label !== md.id ? `${md.label} · ${md.id}` : md.id }))
+      const modelName = (id) => {
+        const found = models.find((md) => md.id === id)
+        return (found && found.label) || id || '—'
+      }
+
+      /** 端点地址能对上预设时，给出这家供应商常用的模型 ID（小写、带版本号），点一下就填。 */
+      const suggestFor = (endpointId) => {
+        const endpoint = endpoints.find((ep) => ep.id === endpointId)
+        if (!endpoint || !endpoint.baseUrl) return []
+        const trim = (url) => String(url).replace(/\/+$/, '')
+        const preset = PRESETS.find((item) => item.baseUrl && trim(item.baseUrl) === trim(endpoint.baseUrl))
+        return (preset && preset.models) || []
+      }
 
       const renameRow = (section, index, field, next) => {
         setDraft((current) => {
@@ -793,16 +915,16 @@ window.__ModuleLoader__.load({
                 h(
                   'div',
                   { className: 'tm-fields' },
-                  h(Field, { label: t('fId'), hint: t('autoId') }, h(TextInput, {
-                    value: endpoint.id,
-                    mono: true,
-                    autoFocus: Boolean(focusRow && focusRow.section === 'endpoints' && focusRow.index === index),
-                    onChange: (next) => renameRow('endpoints', index, 'id', next),
-                  })),
                   h(Field, { label: t('fLabel') }, h(TextInput, {
                     value: endpoint.label,
                     placeholder: '火山方舟',
+                    autoFocus: Boolean(focusRow && focusRow.section === 'endpoints' && focusRow.index === index),
                     onChange: (next) => renameRow('endpoints', index, 'label', next),
+                  })),
+                  h(Field, { label: t('fId'), hint: t('autoId') }, h(TextInput, {
+                    value: endpoint.id,
+                    mono: true,
+                    onChange: (next) => renameRow('endpoints', index, 'id', next),
                   })),
                   h(Field, { label: t('fProtocol') }, h(Select, {
                     value: endpoint.protocol || 'openai',
@@ -878,29 +1000,49 @@ window.__ModuleLoader__.load({
                 confirmBar('models', index),
                 h(
                   'div',
-                  { className: 'tm-fields' },
-                  h(Field, { label: t('fId'), hint: t('autoId') }, h(TextInput, {
-                    value: model.id,
-                    mono: true,
-                    autoFocus: Boolean(focusRow && focusRow.section === 'models' && focusRow.index === index),
-                    onChange: (next) => renameRow('models', index, 'id', next),
-                  })),
+                  { className: 'tm-fields two' },
                   h(Field, { label: t('fLabel') }, h(TextInput, {
                     value: model.label,
                     placeholder: 'Kimi K3.1 Pro',
                     onChange: (next) => renameRow('models', index, 'label', next),
                   })),
-                  h(Field, { label: t('fModel') }, h(TextInput, {
-                    value: model.model,
-                    bad: !model.model && !isBlankModel(model),
-                    mono: true,
-                    placeholder: 'DeepSeek-V4.1-Flash',
-                    onChange: (next) => renameRow('models', index, 'model', next),
-                  })),
+                  h(
+                    'div',
+                    { className: 'tm-field-wrap' },
+                    h(Field, { label: t('fModel') }, h(TextInput, {
+                      value: model.model,
+                      bad: !model.model && !isBlankModel(model),
+                      mono: true,
+                      placeholder: 'deepseek-v4.1-flash',
+                      onChange: (next) => renameRow('models', index, 'model', next),
+                    })),
+                    suggestFor(model.endpoint).length
+                      ? h(
+                        'div',
+                        { className: 'tm-suggest' },
+                        suggestFor(model.endpoint).map((id) => h(
+                          'button',
+                          {
+                            key: id,
+                            type: 'button',
+                            className: `tm-preset${id === model.model ? ' active' : ''}`,
+                            onClick: () => patch(['models', index, 'model'], id),
+                          },
+                          id,
+                        )),
+                      )
+                      : null,
+                  ),
                   h(Field, { label: t('fEndpoint') }, h(Select, {
                     value: model.endpoint || '',
                     options: endpointOptions,
                     onChange: (next) => patch(['models', index, 'endpoint'], next),
+                  })),
+                  h(Field, { label: t('fId'), hint: t('autoId') }, h(TextInput, {
+                    value: model.id,
+                    mono: true,
+                    autoFocus: Boolean(focusRow && focusRow.section === 'models' && focusRow.index === index),
+                    onChange: (next) => renameRow('models', index, 'id', next),
                   })),
                 ),
                 h('button', { type: 'button', className: 'tm-link', onClick: () => toggleAdv(key) }, openAdv[key] ? t('advHide') : t('advShow')),
@@ -967,7 +1109,7 @@ window.__ModuleLoader__.load({
               h('span', { className: 'tm-count' }, String(index + 1)),
               h('span', { className: 'tm-card-name' }, layer.id || '层级'),
               h('span', { className: 'tm-chip' }, layer.kind || 'custom'),
-              h('span', { className: 'tm-chip' }, layer.model || '—'),
+              h('span', { className: 'tm-chip' }, modelName(layer.model)),
               layer.gate?.reworkTo
                 ? h('span', { className: 'tm-chip warn' }, `FAIL→${layer.gate.reworkTo}×${layer.gate.maxRounds ?? draft.settings?.maxRounds ?? 2}`)
                 : null,
@@ -1128,6 +1270,7 @@ window.__ModuleLoader__.load({
             ),
           ),
         ),
+        h('p', { className: 'tm-note tm-tip' }, t('doctorHint')),
         h(
           'div',
           { className: 'tm-footer' },
