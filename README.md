@@ -37,7 +37,7 @@ dsh plugin --profile desktop add "file:D:\path\to\tri-model"
 配端点和模型时的几个省事设计：
 
 - 点「+ 添加端点」先选供应商（17 个预设：火山方舟的两套入口、DeepSeek 官方、智谱 GLM、Moonshot、阿里百炼、硅基流动、百度千帆、OpenAI、Anthropic、Gemini、xAI、Mistral、Groq、OpenRouter、本地 Ollama、自建/其他），地址、协议、路径覆盖一次填好，密钥引用也跟着生成。
-- 「真实模型名」是一个可输入的下拉：框里直接打字照样生效，点右侧 `▾` 或聚焦输入框会列出这家供应商常用的模型 ID（`deepseek-v4.1-flash`、`kimi-k3.1-pro` 这种小写带版本号的写法），选一条就填进去，省得记 ID。
+- 「真实模型名」是一个可输入的下拉：框里直接打字照样生效，点右侧 `▾` 或聚焦输入框会列出这家供应商常用的模型 ID（`deepseek-v4.1-flash`、`kimi-k3.1-pro` 这种小写带版本号的写法），选一条就填进去，省得记 ID。内置候选只放**实际调通过的** ID（目前只有火山方舟 plan 入口那一套），别的供应商不靠猜——直接发 `/tri-models` 问它要。
 - 卡片默认折叠，一行摘要就够看：名称、协议、地址、密钥是否已配（端点）；名称、挂的端点、能力标记（模型）；序号、类型、用哪个模型、返工门禁（层级）。点标题展开改字段，段头有「展开全部 / 收起全部」。
 - 下拉里选模型/端点时会带上显示名（`Kimi K3.1 Pro · kimi-pro`），两个同类模型不会混。
 - 标识（`id`）跟着名称自动生成（`DeepSeek 官方` → `deepseek`，重名自动加后缀），手改过就不再跟随。
@@ -71,6 +71,17 @@ dsh plugin --profile desktop add "file:D:\path\to\tri-model"
 ```
 
 逐个模型发一条最小请求，把延迟表（`✓ 模型 · 协议 · 毫秒 · 回包`）贴进当前会话；后面跟一个模型 id 就只测那个。等价于让 agent 调 `tri_doctor`。
+
+## `/tri-models` 命令
+
+模型 ID 别靠记忆。直接问服务商：
+
+```
+/tri-models              # 所有端点
+/tri-models ark-plan     # 只看某个端点
+```
+
+插件用该端点的密钥请求它的 `/models` 接口（OpenAI 兼容、Anthropic、Gemini 各自走对应的路径与鉴权），把拿到的 ID 列表贴进会话，上限 200 条。端点没有 `/models`（比如火山方舟的 Coding Plan 入口）会如实报 404，这时按服务商文档填 ID；401/403 则说明密钥和端点对不上。
 
 ## 协议
 

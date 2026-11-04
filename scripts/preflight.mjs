@@ -93,6 +93,20 @@ try {
   for (const name of expected) if (!tools.includes(name)) fail(`缺少工具 ${name}`)
   if (!commands.includes('tri')) fail(`缺少命令 /tri：${commands.join(',')}`)
   if (!commands.includes('tri-doctor')) fail(`缺少命令 /tri-doctor：${commands.join(',')}`)
+  if (!commands.includes('tri-models')) fail(`缺少命令 /tri-models：${commands.join(',')}`)
+
+  /* /tri-models 的 URL 与鉴权头按协议分派，错一个整个功能就废 */
+  const { buildModelsRequest, parseModels } = await import(pathToFileURL(join(root, 'lib', 'protocols.js')).href)
+  const openaiReq = buildModelsRequest({ protocol: 'openai', endpoint: { baseUrl: 'https://api.example.com/v1/' }, key: 'k' })
+  if (openaiReq.url !== 'https://api.example.com/v1/models') fail(`openai /models 地址不对：${openaiReq.url}`)
+  if (openaiReq.headers.Authorization !== 'Bearer k') fail('openai /models 鉴权头不对')
+  const anthropicReq = buildModelsRequest({ protocol: 'anthropic', endpoint: { baseUrl: 'https://api.anthropic.com' }, key: 'k' })
+  if (anthropicReq.url !== 'https://api.anthropic.com/v1/models') fail(`anthropic /models 地址不对：${anthropicReq.url}`)
+  if (anthropicReq.headers['x-api-key'] !== 'k') fail('anthropic /models 鉴权头不对')
+  const geminiReq = buildModelsRequest({ protocol: 'gemini', endpoint: { baseUrl: 'https://generativelanguage.googleapis.com' }, key: 'k' })
+  if (!geminiReq.url.includes('/v1beta/models?key=k')) fail(`gemini /models 地址不对：${geminiReq.url}`)
+  if (parseModels('openai', { data: [{ id: 'a' }, { id: 'b' }] }).join() !== 'a,b') fail('openai /models 解析不对')
+  if (parseModels('gemini', { models: [{ name: 'models/gem' }] }).join() !== 'gem') fail('gemini /models 解析不对')
   note(`宿主：工具 ${tools.join(', ')}；命令 ${commands.map((c) => `/${c}`).join(', ')}`)
 } catch (error) {
   fail(`index.js 加载/apply 失败：${error.message}`)

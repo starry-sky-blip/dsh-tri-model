@@ -42,6 +42,15 @@
 | 验证 | `client.js` 无头渲染冒烟（mock React + 焦点事件）：7 张卡 / 7 个折叠头 / 单行默认展开 / 9 个预设按钮，点预设新增一行后 8 张卡；Host 半边 4 工具 + 2 命令；`npm pack` 逐文件核对 |
 | 兼容 | 配置结构未变（只改设置页与新增命令），1.0.3 升 1.0.4 无需迁移 |
 
+## 待发布（1.0.5）
+
+| 项 | 值 |
+|---|---|
+| 改动 | ① 设置页：模型卡「标识」不再被长 hint 挤成竖排（`.tm-label-text` 不换行 + hint 省略号），模型卡改 2×2 栅格；② 「真实模型名」改成**可输入下拉**（ComboBox），撤掉输入框下的候选胶囊行；③ 预设扩到 17 个供应商；④ 面板底部常驻「测连接：保存后发 /tri-doctor」提示；⑤ 内置候选模型 ID 只保留**实测调通**的（火山方舟 plan 入口 10 个），其余一律不写；⑥ 新增 `/tri-models` 命令，向端点要 `/models` 现拉真实 ID |
+| 为什么 | 用户实测 `deepseek-v4.1` 在 plan 入口 404（「does not support the agent plan feature」），说明凭空写的候选会直接把人带沟里；同时候选胶囊行挤在字段下方很难看 |
+| 验证 | `npm run preflight`（含 `/tri-models` 的 URL/鉴权/解析断言）、`scripts/combo-test.mjs` 13 项、`scripts/render-test`、`scripts/host-test` 全 PASS；真实探测：`deepseek-v4.1` 404、`deepseek-v4.1-flash`/`kimi-k3.1-pro`/`glm-5.3` 等 200 |
+| 兼容 | 配置结构未变；若此前填了不存在的模型 ID，需改成真实 ID（`/tri-models` 或服务商文档） |
+
 ## 剩余一步：awesome 收录
 
 提交一个文件 `data/plugins/starry-sky-blip__dsh-tri-model.yml`（`category: model`），内容见下节。两条硬门槛（contributing.md 里写明，CI 自动检查）：

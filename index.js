@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { Config, DEFAULT_ENDPOINTS, DEFAULT_MODELS, DEFAULT_LAYERS, describeConfig, findEndpoint, normalizeConfig, validateConfig } from './lib/config.js'
 import { doctor, reviewWith, runPipeline } from './lib/engine.js'
 import { ACTIONS, applyConfigAction } from './lib/ops.js'
+import { buildModelsRequest, parseModels } from './lib/protocols.js'
 
 export { Config }
 
@@ -385,5 +386,96 @@ export function apply(ctx, config) {
         }),
       'tri-model: /tri-doctor command',
     )
+
+    /*
+     * 面板里那些「候选模型 ID」不能靠猜。让用户在自己的端点上直接问服务商要列表，
+     * 比插件内置一张会过期的表可靠。
+     */
+    ctx.effect(
+      () =>
+        commands.register({
+          name: 'tri-models',
+          description: '列出某个端点上有哪些模型 ID（问服务商的 /models），把结果贴进会话',
+          input: { hint: '可留空列全部端点，或填端点 id 只看它，例如 ark-plan' },
+          handler: async (invocation) => {
+            const only = String(invocation?.rawInput || '').trim() || undefined
+            let text
+            try {
+              const cfg = await readConfig()
+              text = await modelLines(cfg, only)
+            } catch (error) {
+              return { kind: 'error', text: String(error?.message || error) }
+            }
+
+            const brief = [
+              '这是我刚拉取的多模型协同端点模型清单（`/tri-models`）结果，请原样贴出来，不要改写：',
+              '',
+              '```',
+              text,
+              '```',
+              '',
+              '然后把设置 → 「多模型协同」里各模型的「真实模型名」改成本清单里存在的 ID，改完在本会话发 `/tri-doctor` 复核。',
+            ].join('\n')
+
+            if (await queuePrompt(invocation?.agent, brief)) {
+              return { kind: 'success', text: '已拉取，清单会作为下一轮对话出现在这里。' }
+            }
+            return { kind: 'success', text }
+          },
+        }),
+      'tri-model: /tri-models command',
+    )
+  }
+
+  /** 逐个端点问服务商要模型清单；不支持 /models 的端点如实说明。 */
+  async function modelLines(cfg, only) {
+    const targets = cfg.endpoints.filter((endpoint) => !only || endpoint.id === only)
+    if (!targets.length) return `没有找到端点${only ? `「${only}」` : ''}。可用端点：${cfg.endpoints.map((e) => e.id).join('、') || '（无）'}`
+
+    const lines = [`配置 namespace：${NS} · 端点 ${cfg.endpoints.length}`]
+    for (const endpoint of targets) {
+      const protocol = endpoint.protocol || 'openai'
+      const key = await resolveKey(endpoint)
+      if (!key) {
+        lines.push('', `✗ ${endpoint.id} · ${protocol} · 没有可用密钥（先保存密钥或设置环境变量 ${envName(endpoint)}）`)
+        continue
+      }
+
+      const request = buildModelsRequest({ protocol, endpoint, key })
+      const started = Date.now()
+      try {
+        const response = await fetch(request.url, {
+          method: 'GET',
+          headers: request.headers,
+          signal: AbortSignal.timeout(15000),
+        })
+        const elapsed = Date.now() - started
+        const body = await response.text()
+        if (!response.ok) {
+          lines.push('', `✗ ${endpoint.id} · ${protocol} · HTTP ${response.status}（${elapsed}ms）`)
+          const detail = body.trim()
+          if (detail) lines.push(`  ${detail.slice(0, 220).replace(/\s+/g, ' ')}`)
+          else lines.push('  （服务商没有返回内容）')
+          if (response.status === 404) lines.push('  该端点没有 /models 接口，去服务商文档核对模型 ID。')
+          if (response.status === 401 || response.status === 403) lines.push('  密钥对不上这个端点，先确认密钥属于这家服务商。')
+          continue
+        }
+        let json
+        try {
+          json = JSON.parse(body)
+        } catch {
+          lines.push('', `✗ ${endpoint.id} · ${protocol} · 回包不是 JSON（${elapsed}ms）`)
+          continue
+        }
+        const ids = parseModels(protocol, json)
+        lines.push('', `✓ ${endpoint.id} · ${protocol} · ${ids.length} 个模型（${elapsed}ms）`)
+        if (!ids.length) lines.push('  接口可用但没返回模型，检查密钥权限。')
+        for (const id of ids.slice(0, 200)) lines.push(`  ${id}`)
+        if (ids.length > 200) lines.push(`  …另有 ${ids.length - 200} 个`)
+      } catch (error) {
+        lines.push('', `✗ ${endpoint.id} · ${protocol} · ${String(error?.message || error).slice(0, 200)}`)
+      }
+    }
+    return lines.join('\n')
   }
 }
