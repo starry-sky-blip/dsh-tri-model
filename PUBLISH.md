@@ -68,6 +68,8 @@ description:
 
 ## 发布前自检命令
 
+**先跑 `node scripts/preflight.mjs`**（或 `npm run preflight`）：它不启动 DSH，检查文件 BOM/JSON、`package.json` 字段、宿主 `apply()` 注册的工具与命令、客户端能否注册设置页并渲染出关键元素。1.0.5 那次「重启后插件整个消失」就是 `package.json` 被写成带 BOM 导致的——宿主直接 `skipping profile bundle "dsh-tri-model": SyntaxError: Unexpected token '﻿'`，所以这条必须在发版前过。
+
 ```powershell
 $node = "$env:APPDATA\nvm\v22.19.0\node.exe"
 $pnpm = 'D:\浏览器安装\deepseek\resources\runtime\primary-runtime\dependencies\pnpm\bin\pnpm.cjs'

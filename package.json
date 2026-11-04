@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "dsh-tri-model",
   "version": "1.0.5",
   "type": "module",
@@ -61,5 +61,8 @@
   "engines": {
     "node": ">=20",
     "dsh": ">=0.2.0-rc.1 <0.3.0-0"
+  },
+  "scripts": {
+    "preflight": "node scripts/preflight.mjs"
   }
 }
