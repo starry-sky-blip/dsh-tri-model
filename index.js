@@ -245,6 +245,22 @@ export function apply(ctx, config) {
 
   /* ------------------------------------------------------------- tri_doctor */
 
+  /** doctor 结果的纯文本表：tri_doctor 工具与 /tri-doctor 命令共用一份格式。 */
+  const doctorLines = (cfg, results) => {
+    const lines = [`配置 namespace：${NS} · 端点 ${cfg.endpoints.length} · 模型 ${cfg.models.length} · 层级 ${cfg.layers.length}`, '']
+    for (const row of results) {
+      if (row.ok) {
+        const extra = [row.degraded?.length ? `降级:${row.degraded.join(',')}` : '', row.notes?.length ? row.notes.join(',') : ''].filter(Boolean).join(' · ')
+        lines.push(`✓ ${row.id} · ${row.protocol} · ${row.ms}ms${extra ? ` · ${extra}` : ''} · 回包「${row.sample}」`)
+      } else {
+        lines.push(`✗ ${row.id} · ${row.ms == null ? '—' : `${row.ms}ms`} · ${row.error}`)
+      }
+    }
+    const okCount = results.filter((row) => row.ok).length
+    lines.push('', `${okCount}/${results.length} 个模型可用。`)
+    return lines.join('\n')
+  }
+
   ctx.tools.register({
     name: 'tri_doctor',
     description: '连通性自检：对配置里的每个模型发一条最小请求，报告地址、协议、延迟、降级情况与错误。装好或改完配置先跑这个。',
@@ -259,18 +275,7 @@ export function apply(ctx, config) {
     execute: async (args) => {
       const cfg = await readConfig()
       const results = await doctor({ cfg, only: args.model, resolveKey })
-      const lines = [`配置 namespace：${NS} · 端点 ${cfg.endpoints.length} · 模型 ${cfg.models.length} · 层级 ${cfg.layers.length}`, '']
-      for (const row of results) {
-        if (row.ok) {
-          const extra = [row.degraded?.length ? `降级:${row.degraded.join(',')}` : '', row.notes?.length ? row.notes.join(',') : ''].filter(Boolean).join(' · ')
-          lines.push(`✓ ${row.id} · ${row.protocol} · ${row.ms}ms${extra ? ` · ${extra}` : ''} · 回包「${row.sample}」`)
-        } else {
-          lines.push(`✗ ${row.id} · ${row.ms}ms · ${row.error}`)
-        }
-      }
-      const okCount = results.filter((row) => row.ok).length
-      lines.push('', `${okCount}/${results.length} 个模型可用。`)
-      return lines.join('\n')
+      return doctorLines(cfg, results)
     },
   })
 
@@ -341,6 +346,44 @@ export function apply(ctx, config) {
           },
         }),
       'tri-model: /tri command',
+    )
+
+    /*
+     * 设置面板做不了「测试连接」：客户端的网络请求会被 CORS 挡住，宿主也没有给客户端
+     * 暴露任意 RPC。于是把连通性自检做成命令，跑完直接贴进会话——同样是「点一下就知道
+     * 密钥通不通」，只是入口从按钮挪到了输入框。
+     */
+    ctx.effect(
+      () =>
+        commands.register({
+          name: 'tri-doctor',
+          description: '连通性自检：逐个模型发一条最小请求，把延迟表贴进当前会话',
+          input: { hint: '可留空测全部，或填一个模型 id 只测它' },
+          handler: async (invocation) => {
+            const only = String(invocation?.rawInput || '').trim() || undefined
+            let text
+            try {
+              const cfg = await readConfig()
+              text = doctorLines(cfg, await doctor({ cfg, only, resolveKey }))
+            } catch (error) {
+              return { kind: 'error', text: String(error?.message || error) }
+            }
+
+            const brief = [
+              '这是我刚跑的多模型协同连通性自检（`/tri-doctor`）结果，请原样贴出来，不要改写表格：',
+              '',
+              '```',
+              text,
+              '```',
+            ].join('\n')
+
+            if (await queuePrompt(invocation?.agent, brief)) {
+              return { kind: 'success', text: '自检完成，结果会作为下一轮对话出现在这里。' }
+            }
+            return { kind: 'success', text }
+          },
+        }),
+      'tri-model: /tri-doctor command',
     )
   }
 }

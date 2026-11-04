@@ -12,6 +12,38 @@ window.__ModuleLoader__.load({
       { value: 'gemini', label: 'gemini' },
     ]
     const KINDS = ['plan', 'execute', 'review', 'judge', 'route', 'custom']
+    /** 常见供应商：只填地址和协议，密钥仍然由用户自己贴。 */
+    const PRESETS = [
+      { id: 'ark-plan', label: '火山方舟 · Coding Plan', baseUrl: 'https://ark.cn-beijing.volces.com/api/plan/v3', protocol: 'openai' },
+      { id: 'ark', label: '火山方舟 · 标准 v3', baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', protocol: 'openai' },
+      { id: 'deepseek', label: 'DeepSeek 官方', baseUrl: 'https://api.deepseek.com/v1', protocol: 'openai' },
+      { id: 'moonshot', label: 'Moonshot · Kimi', baseUrl: 'https://api.moonshot.cn/v1', protocol: 'openai' },
+      { id: 'openai', label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', protocol: 'openai' },
+      { id: 'openrouter', label: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1', protocol: 'openai' },
+      { id: 'gemini', label: 'Google Gemini', baseUrl: 'https://generativelanguage.googleapis.com', protocol: 'gemini' },
+      { id: 'anthropic', label: 'Anthropic', baseUrl: 'https://api.anthropic.com', protocol: 'anthropic', path: '/v1/messages' },
+      { id: 'custom', label: '', baseUrl: '', protocol: 'openai' },
+    ]
+
+    /** 中文标签转不出有意义的口径，就退回到「前缀-序号」。 */
+    const slugify = (text, fallback) => {
+      const raw = String(text || '').trim().toLowerCase()
+      const ascii = raw.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      if (ascii) return ascii.slice(0, 40)
+      const digits = raw.replace(/[^0-9]+/g, '')
+      return digits ? `${fallback}-${digits}` : fallback
+    }
+    const uniqueId = (base, taken) => {
+      const root = base || 'row'
+      if (!taken.has(root)) return root
+      let id = root
+      let n = 2
+      while (taken.has(id)) {
+        id = `${root}-${n}`
+        n += 1
+      }
+      return id
+    }
 
     const zh = {
       title: '多模型协同',
@@ -79,6 +111,15 @@ window.__ModuleLoader__.load({
       keyStored: '密钥在保存时写入 DSH 凭据库，设置文件里只留引用名。',
       pending: '项待修',
       charUnit: ' 字',
+      presetHint: '选一个预设，地址和协议自动填好，只剩密钥要你填。',
+      presetCustom: '自建 / 其他',
+      allOpen: '展开全部',
+      allFold: '收起全部',
+      usedByEndpoint: '{n} 个模型在用这个端点，删掉后它们会失去地址。',
+      usedByModel: '{n} 个层级在用这个模型，删掉后它们会失效。',
+      confirmDelete: '仍然删除',
+      cancel: '取消',
+      autoId: '标识随名称自动生成，也可以手改',
     }
 
     const en = {
@@ -147,6 +188,15 @@ window.__ModuleLoader__.load({
       keyStored: 'Keys are written to DSH credentials on save; the settings file keeps only a reference.',
       pending: ' to fix',
       charUnit: ' chars',
+      presetHint: 'Pick a preset; URL and protocol are filled in, only the key is yours.',
+      presetCustom: 'Self-hosted / other',
+      allOpen: 'Expand all',
+      allFold: 'Collapse all',
+      usedByEndpoint: '{n} model(s) use this endpoint and will lose their URL.',
+      usedByModel: '{n} layer(s) use this model and will break.',
+      confirmDelete: 'Delete anyway',
+      cancel: 'Cancel',
+      autoId: 'The id follows the name until you edit it yourself',
     }
     const DICT = { zh, en }
 
@@ -212,6 +262,20 @@ window.__ModuleLoader__.load({
 .tm-msg.ok{color:var(--dsw-alias-state-success-primary)}
 .tm-msg.bad{color:var(--dsw-alias-state-error-primary)}
 .tm-global{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 12px}
+.tm-card-head{cursor:pointer;user-select:none}
+.tm-card-head:hover .tm-card-name{color:var(--dsw-alias-brand-primary)}
+.tm-fold{flex:none;width:14px;font-size:10px;line-height:1;color:var(--dsw-alias-label-secondary);transition:transform .12s}
+.tm-card.open .tm-fold{transform:rotate(90deg)}
+.tm-card-body{display:flex;flex-direction:column;gap:10px}
+.tm-card:not(.open){gap:0;padding-top:9px;padding-bottom:9px}
+.tm-presets{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-base)}
+.tm-preset-row{display:flex;flex-wrap:wrap;gap:7px}
+.tm-preset{font:inherit;font-size:11.5px;line-height:1;padding:6px 10px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);cursor:pointer;white-space:nowrap}
+.tm-preset:hover{border-color:var(--dsw-alias-brand-primary)}
+.tm-confirm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--dsw-alias-state-warn-primary);border-radius:8px;font-size:12px}
+.tm-confirm-text{color:var(--dsw-alias-label-primary)}
+.tm-confirm .tm-btn{padding:5px 9px;font-size:11.5px}
+.tm-confirm .tm-btn.danger{border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary)}
 @media (max-width:720px){.tm-fields{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}.tm-desc{max-width:none}}
 `
 
@@ -346,7 +410,10 @@ window.__ModuleLoader__.load({
         className: `tm-switch${props.on ? ' on' : ''}`,
         title: props.title,
         'aria-pressed': Boolean(props.on),
-        onClick: () => props.onChange(!props.on),
+        onClick: (event) => {
+          event.stopPropagation()
+          props.onChange(!props.on)
+        },
       }, h('i'))
     }
 
@@ -357,7 +424,10 @@ window.__ModuleLoader__.load({
         title: props.title,
         'aria-label': props.title,
         disabled: props.disabled,
-        onClick: props.onClick,
+        onClick: (event) => {
+          event.stopPropagation()
+          props.onClick(event)
+        },
       }, props.glyph)
     }
 
@@ -368,6 +438,9 @@ window.__ModuleLoader__.load({
         h('span', { className: 'tm-sec-title' }, props.title),
         h('span', { className: 'tm-count' }, String(props.count)),
         h('span', { className: 'tm-spacer' }),
+        props.count && props.onToggleAll
+          ? h('button', { type: 'button', className: 'tm-btn ghost', onClick: props.onToggleAll }, props.allOpen ? props.foldLabel : props.openLabel)
+          : null,
         h('button', { type: 'button', className: 'tm-btn ghost', onClick: props.onAdd }, `+ ${props.actionLabel}`),
       )
     }
@@ -387,6 +460,9 @@ window.__ModuleLoader__.load({
       const [status, setStatus] = React.useState({ tone: '', text: '' })
       const [busy, setBusy] = React.useState(false)
       const [openAdv, setOpenAdv] = React.useState({})
+      const [openCards, setOpenCards] = React.useState({})
+      const [confirmDel, setConfirmDel] = React.useState(null)
+      const [presetOpen, setPresetOpen] = React.useState(false)
       /** 刚加进来的行：把焦点放到标识输入框，省得用户再点一下。 */
       const [focusRow, setFocusRow] = React.useState(null)
       const baseline = React.useRef(null)
@@ -444,17 +520,53 @@ window.__ModuleLoader__.load({
 
       const patch = (path, next) => setDraft((current) => (current ? setIn(current, path, next) : current))
 
-      const addRow = (section) => {
+      const addRow = (section, preset) => {
         const nextIndex = (draft?.[section] || []).length
         setDraft((current) => {
           if (!current) return current
           const rows = (current[section] || []).slice()
-          if (section === 'endpoints') rows.push(emptyEndpoint(rows.length + 1))
-          if (section === 'models') rows.push(emptyModel(rows.length + 1, (current.endpoints || [])[0]?.id))
-          if (section === 'layers') rows.push(emptyLayer(rows.length + 1, (current.models || [])[0]?.id))
+          const taken = new Set(rows.map((row) => row.id))
+          if (section === 'endpoints') {
+            const blank = emptyEndpoint(rows.length + 1)
+            const seed = preset && preset.id !== 'custom' ? preset : null
+            const id = uniqueId(seed ? seed.id : blank.id, taken)
+            rows.push({
+              ...blank,
+              id,
+              apiKeyRef: `tri-model.${id}`,
+              ...(seed
+                ? {
+                  label: seed.label,
+                  baseUrl: seed.baseUrl,
+                  protocol: seed.protocol,
+                  ...(seed.path ? { path: seed.path } : {}),
+                }
+                : {}),
+            })
+          }
+          if (section === 'models') {
+            const blank = emptyModel(rows.length + 1, (current.endpoints || [])[0]?.id)
+            const id = uniqueId(blank.id, taken)
+            rows.push({ ...blank, id })
+          }
+          if (section === 'layers') {
+            const blank = emptyLayer(rows.length + 1, (current.models || [])[0]?.id)
+            const id = uniqueId(blank.id, taken)
+            rows.push({ ...blank, id })
+          }
           return { ...current, [section]: rows }
         })
+        setOpenCards((current) => ({ ...current, [`${section}:${nextIndex}`]: true }))
         setFocusRow({ section, index: nextIndex })
+        setPresetOpen(false)
+      }
+
+      /** 删之前先看有没有别的地方在引用它，有就当场问一句。 */
+      const referencesOf = (section, row) => {
+        if (!row) return 0
+        if (section === 'endpoints') return (draft?.models || []).filter((md) => md.endpoint === row.id).length
+        if (section === 'models') return (draft?.layers || []).filter((ly) => ly.model === row.id).length
+        return 0
       }
 
       const removeRow = (section, index) => {
@@ -463,6 +575,45 @@ window.__ModuleLoader__.load({
           const rows = (current[section] || []).slice()
           rows.splice(index, 1)
           return { ...current, [section]: rows }
+        })
+        setOpenCards((current) => {
+          const next = {}
+          for (const [key, value] of Object.entries(current)) {
+            const [sectionName, raw] = key.split(':')
+            const position = Number(raw)
+            if (sectionName !== section || position === index) continue
+            next[`${sectionName}:${position > index ? position - 1 : position}`] = value
+          }
+          return next
+        })
+        setConfirmDel(null)
+      }
+
+      const askRemove = (section, index) => {
+        const row = (draft?.[section] || [])[index]
+        const count = referencesOf(section, row)
+        if (count > 0) setConfirmDel({ section, index, count })
+        else removeRow(section, index)
+      }
+
+      /* ---- 折叠：默认只有「唯一一行」或「正在编辑的新行」展开 ---- */
+      const isOpen = (section, index, total) => {
+        const key = `${section}:${index}`
+        if (key in openCards) return Boolean(openCards[key])
+        const focused = focusRow && focusRow.section === section && focusRow.index === index
+        return Boolean(focused) || total === 1
+      }
+      const toggleCard = (section, index, total) =>
+        setOpenCards((current) => ({ ...current, [`${section}:${index}`]: !isOpen(section, index, total) }))
+      const allOpen = (section, rows) => rows.length > 0 && rows.every((row, index) => isOpen(section, index, rows.length))
+      const toggleAll = (section, rows) => {
+        const open = !allOpen(section, rows)
+        setOpenCards((current) => {
+          const next = { ...current }
+          rows.forEach((row, index) => {
+            next[`${section}:${index}`] = open
+          })
+          return next
         })
       }
 
@@ -578,6 +729,37 @@ window.__ModuleLoader__.load({
       const endpointOptions = endpoints.map((ep) => ({ value: ep.id, label: ep.id }))
       const modelOptions = models.map((md) => ({ value: md.id, label: md.id }))
 
+      const renameRow = (section, index, field, next) => {
+        setDraft((current) => {
+          if (!current) return current
+          const rows = (current[section] || []).slice()
+          const row = { ...rows[index] }
+          const previous = row[field]
+          const prefix = section === 'endpoints' ? 'endpoint' : section === 'models' ? 'model' : 'layer'
+          const autoBefore = slugify(previous, `${prefix}-${index + 1}`)
+          row[field] = next
+          if (field !== 'id' && (!row.id || row.id === autoBefore)) {
+            const taken = new Set(rows.filter((_, position) => position !== index).map((item) => item.id))
+            row.id = uniqueId(slugify(next, `${prefix}-${index + 1}`), taken)
+          }
+          rows[index] = row
+          return { ...current, [section]: rows }
+        })
+      }
+
+      const confirmBar = (section, index) => {
+        const confirm = confirmDel && confirmDel.section === section && confirmDel.index === index ? confirmDel : null
+        if (!confirm) return null
+        const key = section === 'endpoints' ? 'usedByEndpoint' : 'usedByModel'
+        return h(
+          'div',
+          { className: 'tm-confirm' },
+          h('span', { className: 'tm-confirm-text' }, t(key).replace('{n}', String(confirm.count))),
+          h('button', { type: 'button', className: 'tm-btn danger', onClick: () => removeRow(section, index) }, t('confirmDelete')),
+          h('button', { type: 'button', className: 'tm-btn', onClick: () => setConfirmDel(null) }, t('cancel')),
+        )
+      }
+
       /* ---- 端点 ---- */
       const endpointCards = endpoints.length
         ? endpoints.map((endpoint, index) => {
@@ -585,13 +767,15 @@ window.__ModuleLoader__.load({
           const known = keyState !== null
           const configured = Boolean((known && keyState[ref]) || keys[endpoint.id])
           const key = `ep${index}`
+          const open = isOpen('endpoints', index, endpoints.length)
           return h(
             'div',
-            { className: 'tm-card', key },
+            { className: `tm-card${open ? ' open' : ''}`, key },
             h(
               'div',
-              { className: 'tm-card-head' },
-              h('span', { className: 'tm-card-name' }, endpoint.label || endpoint.id || '新端点'),
+              { className: 'tm-card-head', role: 'button', tabIndex: 0, onClick: () => toggleCard('endpoints', index, endpoints.length) },
+              h('span', { className: 'tm-fold' }, '▸'),
+              h('span', { className: 'tm-card-name' }, endpoint.label || endpoint.id || '端点'),
               h('span', { className: 'tm-chip' }, endpoint.protocol || 'openai'),
               isBlankEndpoint(endpoint) ? h('span', { className: 'tm-chip' }, t('blank')) : null,
               h('span', { className: 'tm-note' }, hostOf(endpoint.baseUrl)),
@@ -599,57 +783,68 @@ window.__ModuleLoader__.load({
                 ? h('span', { className: `tm-chip ${configured ? 'ok' : 'warn'}` }, configured ? t('keyConfigured') : t('keyMissing'))
                 : null,
               h('span', { className: 'tm-spacer' }),
-              h(IconButton, { glyph: '×', title: t('remove'), onClick: () => removeRow('endpoints', index) }),
+              open ? h(IconButton, { glyph: '×', title: t('remove'), onClick: () => askRemove('endpoints', index) }) : null,
             ),
-            h(
-              'div',
-              { className: 'tm-fields' },
-              h(Field, { label: t('fId') }, h(TextInput, {
-                value: endpoint.id,
-                mono: true,
-                autoFocus: Boolean(focusRow && focusRow.section === 'endpoints' && focusRow.index === index),
-                onChange: (next) => patch(['endpoints', index, 'id'], next),
-              })),
-              h(Field, { label: t('fLabel') }, h(TextInput, { value: endpoint.label, onChange: (next) => patch(['endpoints', index, 'label'], next) })),
-              h(Field, { label: t('fProtocol') }, h(Select, {
-                value: endpoint.protocol || 'openai',
-                options: PROTOCOLS,
-                onChange: (next) => patch(['endpoints', index, 'protocol'], next),
-              })),
-            ),
-            h(Field, { label: t('fUrl'), wide: true }, h(TextInput, {
-              value: endpoint.baseUrl,
-              bad: !endpoint.baseUrl && !isBlankEndpoint(endpoint),
-              mono: true,
-              placeholder: 'https://api.example.com/v1',
-              onChange: (next) => patch(['endpoints', index, 'baseUrl'], next),
-            })),
-            h(Field, { label: t('fKey'), wide: true, hint: t('keyHint') }, h(TextInput, {
-              value: keys[endpoint.id] || '',
-              placeholder: configured ? `${t('keyConfigured')} · ${t('keyPlaceholder')}` : t('keyPlaceholder'),
-              onChange: (next) => setKeys((current) => ({ ...current, [endpoint.id]: next })),
-            })),
-            h('button', { type: 'button', className: 'tm-link', onClick: () => toggleAdv(key) }, openAdv[key] ? t('advHide') : t('advShow')),
-            openAdv[key]
+            open
               ? h(
                 'div',
-                { className: 'tm-adv' },
+                { className: 'tm-card-body' },
+                confirmBar('endpoints', index),
                 h(
                   'div',
                   { className: 'tm-fields' },
-                  h(Field, { label: t('fPath') }, h(TextInput, {
-                    value: endpoint.path,
+                  h(Field, { label: t('fId'), hint: t('autoId') }, h(TextInput, {
+                    value: endpoint.id,
                     mono: true,
-                    placeholder: '/v1/messages',
-                    onChange: (next) => patch(['endpoints', index, 'path'], next || undefined),
+                    autoFocus: Boolean(focusRow && focusRow.section === 'endpoints' && focusRow.index === index),
+                    onChange: (next) => renameRow('endpoints', index, 'id', next),
                   })),
-                  h(Field, { label: t('fEnv') }, h(TextInput, {
-                    value: endpoint.envKey,
-                    mono: true,
-                    placeholder: 'MY_API_KEY',
-                    onChange: (next) => patch(['endpoints', index, 'envKey'], next || undefined),
+                  h(Field, { label: t('fLabel') }, h(TextInput, {
+                    value: endpoint.label,
+                    placeholder: '火山方舟',
+                    onChange: (next) => renameRow('endpoints', index, 'label', next),
+                  })),
+                  h(Field, { label: t('fProtocol') }, h(Select, {
+                    value: endpoint.protocol || 'openai',
+                    options: PROTOCOLS,
+                    onChange: (next) => patch(['endpoints', index, 'protocol'], next),
                   })),
                 ),
+                h(Field, { label: t('fUrl'), wide: true }, h(TextInput, {
+                  value: endpoint.baseUrl,
+                  bad: !endpoint.baseUrl && !isBlankEndpoint(endpoint),
+                  mono: true,
+                  placeholder: 'https://api.example.com/v1',
+                  onChange: (next) => patch(['endpoints', index, 'baseUrl'], next),
+                })),
+                h(Field, { label: t('fKey'), wide: true, hint: t('keyHint') }, h(TextInput, {
+                  value: keys[endpoint.id] || '',
+                  placeholder: configured ? `${t('keyConfigured')} · ${t('keyPlaceholder')}` : t('keyPlaceholder'),
+                  onChange: (next) => setKeys((current) => ({ ...current, [endpoint.id]: next })),
+                })),
+                h('button', { type: 'button', className: 'tm-link', onClick: () => toggleAdv(key) }, openAdv[key] ? t('advHide') : t('advShow')),
+                openAdv[key]
+                  ? h(
+                    'div',
+                    { className: 'tm-adv' },
+                    h(
+                      'div',
+                      { className: 'tm-fields' },
+                      h(Field, { label: t('fPath') }, h(TextInput, {
+                        value: endpoint.path,
+                        mono: true,
+                        placeholder: '/v1/messages',
+                        onChange: (next) => patch(['endpoints', index, 'path'], next || undefined),
+                      })),
+                      h(Field, { label: t('fEnv') }, h(TextInput, {
+                        value: endpoint.envKey,
+                        mono: true,
+                        placeholder: 'MY_API_KEY',
+                        onChange: (next) => patch(['endpoints', index, 'envKey'], next || undefined),
+                      })),
+                    ),
+                  )
+                  : null,
               )
               : null,
           )
@@ -660,83 +855,96 @@ window.__ModuleLoader__.load({
       const modelCards = models.length
         ? models.map((model, index) => {
           const key = `md${index}`
+          const open = isOpen('models', index, models.length)
           return h(
             'div',
-            { className: 'tm-card', key },
+            { className: `tm-card${open ? ' open' : ''}`, key },
             h(
               'div',
-              { className: 'tm-card-head' },
-              h('span', { className: 'tm-card-name' }, model.label || model.id || '新模型'),
+              { className: 'tm-card-head', role: 'button', tabIndex: 0, onClick: () => toggleCard('models', index, models.length) },
+              h('span', { className: 'tm-fold' }, '▸'),
+              h('span', { className: 'tm-card-name' }, model.label || model.id || '模型'),
               h('span', { className: 'tm-chip' }, model.endpoint || '—'),
               isBlankModel(model) ? h('span', { className: 'tm-chip' }, t('blank')) : null,
               model.protocol ? h('span', { className: 'tm-chip' }, model.protocol) : null,
               capFlags(model.caps).map((flag) => h('span', { key: flag, className: 'tm-chip' }, flag)),
               h('span', { className: 'tm-spacer' }),
-              h(IconButton, { glyph: '×', title: t('remove'), onClick: () => removeRow('models', index) }),
+              open ? h(IconButton, { glyph: '×', title: t('remove'), onClick: () => askRemove('models', index) }) : null,
             ),
-            h(
-              'div',
-              { className: 'tm-fields' },
-              h(Field, { label: t('fId') }, h(TextInput, {
-                value: model.id,
-                mono: true,
-                autoFocus: Boolean(focusRow && focusRow.section === 'models' && focusRow.index === index),
-                onChange: (next) => patch(['models', index, 'id'], next),
-              })),
-              h(Field, { label: t('fLabel') }, h(TextInput, { value: model.label, onChange: (next) => patch(['models', index, 'label'], next) })),
-              h(Field, { label: t('fModel') }, h(TextInput, {
-                value: model.model,
-                bad: !model.model && !isBlankModel(model),
-                mono: true,
-                placeholder: 'DeepSeek-V4.1-Flash',
-                onChange: (next) => patch(['models', index, 'model'], next),
-              })),
-              h(Field, { label: t('fEndpoint') }, h(Select, {
-                value: model.endpoint || '',
-                options: endpointOptions,
-                onChange: (next) => patch(['models', index, 'endpoint'], next),
-              })),
-            ),
-            h('button', { type: 'button', className: 'tm-link', onClick: () => toggleAdv(key) }, openAdv[key] ? t('advHide') : t('advShow')),
-            openAdv[key]
+            open
               ? h(
                 'div',
-                { className: 'tm-adv' },
+                { className: 'tm-card-body' },
+                confirmBar('models', index),
                 h(
                   'div',
                   { className: 'tm-fields' },
-                  h(Field, { label: t('fProtocol') }, h(Select, {
-                    value: model.protocol || '',
-                    options: [{ value: '', label: t('fProtocolInherit') }, ...PROTOCOLS],
-                    onChange: (next) => patch(['models', index, 'protocol'], next || undefined),
-                  })),
-                  h(Field, { label: t('fTemperature') }, h(TextInput, {
-                    value: model.caps?.temperature == null ? '' : String(model.caps.temperature),
+                  h(Field, { label: t('fId'), hint: t('autoId') }, h(TextInput, {
+                    value: model.id,
                     mono: true,
-                    placeholder: t('inherit'),
-                    onChange: (next) => patch(['models', index, 'caps', 'temperature'], next === '' ? undefined : Number.isNaN(Number(next)) ? next : Number(next)),
+                    autoFocus: Boolean(focusRow && focusRow.section === 'models' && focusRow.index === index),
+                    onChange: (next) => renameRow('models', index, 'id', next),
                   })),
-                  h(Field, { label: t('fThinking') }, h(Select, {
-                    value: model.caps?.thinking === undefined ? '' : String(model.caps.thinking),
-                    options: [{ value: '', label: t('inherit') }, { value: 'true', label: t('on') }, { value: 'false', label: t('off') }],
-                    onChange: (next) => patch(['models', index, 'caps', 'thinking'], next === '' ? undefined : next === 'true'),
+                  h(Field, { label: t('fLabel') }, h(TextInput, {
+                    value: model.label,
+                    placeholder: 'Kimi K3.1 Pro',
+                    onChange: (next) => renameRow('models', index, 'label', next),
                   })),
-                  h(Field, { label: t('fJson') }, h(Select, {
-                    value: model.caps?.json === undefined ? '' : String(model.caps.json),
-                    options: [{ value: '', label: t('inherit') }, { value: 'true', label: t('on') }, { value: 'false', label: t('off') }],
-                    onChange: (next) => patch(['models', index, 'caps', 'json'], next === '' ? undefined : next === 'true'),
-                  })),
-                  h(Field, { label: t('fMinOut') }, h(TextInput, {
-                    value: model.caps?.minOutputTokens == null ? '' : String(model.caps.minOutputTokens),
+                  h(Field, { label: t('fModel') }, h(TextInput, {
+                    value: model.model,
+                    bad: !model.model && !isBlankModel(model),
                     mono: true,
-                    onChange: (next) => patch(['models', index, 'caps', 'minOutputTokens'], next === '' ? undefined : Number(next)),
+                    placeholder: 'DeepSeek-V4.1-Flash',
+                    onChange: (next) => renameRow('models', index, 'model', next),
                   })),
-                  h(Field, { label: t('fChunk') }, h(TextInput, {
-                    value: model.caps?.chunkChars == null ? '' : String(model.caps.chunkChars),
-                    mono: true,
-                    onChange: (next) => patch(['models', index, 'caps', 'chunkChars'], next === '' ? undefined : Number(next)),
+                  h(Field, { label: t('fEndpoint') }, h(Select, {
+                    value: model.endpoint || '',
+                    options: endpointOptions,
+                    onChange: (next) => patch(['models', index, 'endpoint'], next),
                   })),
                 ),
+                h('button', { type: 'button', className: 'tm-link', onClick: () => toggleAdv(key) }, openAdv[key] ? t('advHide') : t('advShow')),
+                openAdv[key]
+                  ? h(
+                    'div',
+                    { className: 'tm-adv' },
+                    h(
+                      'div',
+                      { className: 'tm-fields' },
+                      h(Field, { label: t('fProtocol') }, h(Select, {
+                        value: model.protocol || '',
+                        options: [{ value: '', label: t('fProtocolInherit') }, ...PROTOCOLS],
+                        onChange: (next) => patch(['models', index, 'protocol'], next || undefined),
+                      })),
+                      h(Field, { label: t('fTemperature') }, h(TextInput, {
+                        value: model.caps?.temperature == null ? '' : String(model.caps.temperature),
+                        mono: true,
+                        placeholder: t('inherit'),
+                        onChange: (next) => patch(['models', index, 'caps', 'temperature'], next === '' ? undefined : Number.isNaN(Number(next)) ? next : Number(next)),
+                      })),
+                      h(Field, { label: t('fThinking') }, h(Select, {
+                        value: model.caps?.thinking === undefined ? '' : String(model.caps.thinking),
+                        options: [{ value: '', label: t('inherit') }, { value: 'true', label: t('on') }, { value: 'false', label: t('off') }],
+                        onChange: (next) => patch(['models', index, 'caps', 'thinking'], next === '' ? undefined : next === 'true'),
+                      })),
+                      h(Field, { label: t('fJson') }, h(Select, {
+                        value: model.caps?.json === undefined ? '' : String(model.caps.json),
+                        options: [{ value: '', label: t('inherit') }, { value: 'true', label: t('on') }, { value: 'false', label: t('off') }],
+                        onChange: (next) => patch(['models', index, 'caps', 'json'], next === '' ? undefined : next === 'true'),
+                      })),
+                      h(Field, { label: t('fMinOut') }, h(TextInput, {
+                        value: model.caps?.minOutputTokens == null ? '' : String(model.caps.minOutputTokens),
+                        mono: true,
+                        onChange: (next) => patch(['models', index, 'caps', 'minOutputTokens'], next === '' ? undefined : Number(next)),
+                      })),
+                      h(Field, { label: t('fChunk') }, h(TextInput, {
+                        value: model.caps?.chunkChars == null ? '' : String(model.caps.chunkChars),
+                        mono: true,
+                        onChange: (next) => patch(['models', index, 'caps', 'chunkChars'], next === '' ? undefined : Number(next)),
+                      })),
+                    ),
+                  )
+                  : null,
               )
               : null,
           )
@@ -748,14 +956,16 @@ window.__ModuleLoader__.load({
         ? layers.map((layer, index) => {
           const key = `ly${index}`
           const off = layer.enabled === false
+          const open = isOpen('layers', index, layers.length)
           return h(
             'div',
-            { className: `tm-card${off ? ' off' : ''}`, key },
+            { className: `tm-card${off ? ' off' : ''}${open ? ' open' : ''}`, key },
             h(
               'div',
-              { className: 'tm-card-head' },
+              { className: 'tm-card-head', role: 'button', tabIndex: 0, onClick: () => toggleCard('layers', index, layers.length) },
+              h('span', { className: 'tm-fold' }, '▸'),
               h('span', { className: 'tm-count' }, String(index + 1)),
-              h('span', { className: 'tm-card-name' }, layer.id || '新层级'),
+              h('span', { className: 'tm-card-name' }, layer.id || '层级'),
               h('span', { className: 'tm-chip' }, layer.kind || 'custom'),
               h('span', { className: 'tm-chip' }, layer.model || '—'),
               layer.gate?.reworkTo
@@ -763,62 +973,86 @@ window.__ModuleLoader__.load({
                 : null,
               h('span', { className: 'tm-spacer' }),
               h(Switch, { on: !off, title: t('fEnabled'), onChange: (next) => patch(['layers', index, 'enabled'], next) }),
-              h(IconButton, { glyph: '↑', title: t('up'), plain: true, disabled: index === 0, onClick: () => move(index, -1) }),
-              h(IconButton, { glyph: '↓', title: t('down'), plain: true, disabled: index === layers.length - 1, onClick: () => move(index, 1) }),
-              h(IconButton, { glyph: '×', title: t('remove'), onClick: () => removeRow('layers', index) }),
+              open ? h(IconButton, { glyph: '↑', title: t('up'), plain: true, disabled: index === 0, onClick: () => move(index, -1) }) : null,
+              open ? h(IconButton, { glyph: '↓', title: t('down'), plain: true, disabled: index === layers.length - 1, onClick: () => move(index, 1) }) : null,
+              open ? h(IconButton, { glyph: '×', title: t('remove'), onClick: () => askRemove('layers', index) }) : null,
             ),
-            h(
-              'div',
-              { className: 'tm-fields' },
-              h(Field, { label: t('fId') }, h(TextInput, { value: layer.id, mono: true, onChange: (next) => patch(['layers', index, 'id'], next) })),
-              h(Field, { label: t('fKind') }, h(Select, {
-                value: layer.kind || 'custom',
-                options: KINDS.map((kind) => ({ value: kind, label: kind })),
-                onChange: (next) => patch(['layers', index, 'kind'], next),
-              })),
-              h(Field, { label: t('fModel') }, h(Select, {
-                value: layer.model || '',
-                options: modelOptions,
-                onChange: (next) => patch(['layers', index, 'model'], next),
-              })),
-              h(Field, { label: t('fMaxRounds') }, h(TextInput, {
-                value: layer.gate?.maxRounds == null ? '' : String(layer.gate.maxRounds),
-                mono: true,
-                placeholder: String(draft.settings?.maxRounds ?? 2),
-                onChange: (next) => patch(['layers', index, 'gate', 'maxRounds'], next === '' ? undefined : Number(next)),
-              })),
-              h(Field, { label: t('fRework') }, h(TextInput, {
-                value: layer.gate?.reworkTo,
-                mono: true,
-                placeholder: layers[index - 1]?.id || 'draft',
-                onChange: (next) => patch(['layers', index, 'gate', 'reworkTo'], next || undefined),
-              })),
-            ),
-            h('button', { type: 'button', className: 'tm-link', onClick: () => toggleAdv(key) },
-              openAdv[key] ? t('promptHide') : `${t('promptShow')} · ${String((layer.system || '').length)}${t('charUnit')}`),
-            openAdv[key]
+            open
               ? h(
                 'div',
-                { className: 'tm-adv' },
-                h(Field, { label: t('fSystem'), wide: true }, h('textarea', {
-                  className: 'tm-area',
-                  value: layer.system || '',
-                  rows: 3,
-                  spellCheck: false,
-                  onChange: (event) => patch(['layers', index, 'system'], event.target.value),
-                })),
-                h(Field, { label: t('fTemplate'), wide: true, hint: t('hintTpl') }, h('textarea', {
-                  className: 'tm-area',
-                  value: layer.template || '',
-                  rows: 4,
-                  spellCheck: false,
-                  onChange: (event) => patch(['layers', index, 'template'], event.target.value),
-                })),
+                { className: 'tm-card-body' },
+                confirmBar('layers', index),
+                h(
+                  'div',
+                  { className: 'tm-fields' },
+                  h(Field, { label: t('fId') }, h(TextInput, { value: layer.id, mono: true, onChange: (next) => renameRow('layers', index, 'id', next) })),
+                  h(Field, { label: t('fKind') }, h(Select, {
+                    value: layer.kind || 'custom',
+                    options: KINDS.map((kind) => ({ value: kind, label: kind })),
+                    onChange: (next) => patch(['layers', index, 'kind'], next),
+                  })),
+                  h(Field, { label: t('fModel') }, h(Select, {
+                    value: layer.model || '',
+                    options: modelOptions,
+                    onChange: (next) => patch(['layers', index, 'model'], next),
+                  })),
+                  h(Field, { label: t('fMaxRounds') }, h(TextInput, {
+                    value: layer.gate?.maxRounds == null ? '' : String(layer.gate.maxRounds),
+                    mono: true,
+                    placeholder: String(draft.settings?.maxRounds ?? 2),
+                    onChange: (next) => patch(['layers', index, 'gate', 'maxRounds'], next === '' ? undefined : Number(next)),
+                  })),
+                  h(Field, { label: t('fRework') }, h(TextInput, {
+                    value: layer.gate?.reworkTo,
+                    mono: true,
+                    placeholder: layers[index - 1]?.id || 'draft',
+                    onChange: (next) => patch(['layers', index, 'gate', 'reworkTo'], next || undefined),
+                  })),
+                ),
+                h('button', { type: 'button', className: 'tm-link', onClick: () => toggleAdv(key) },
+                  openAdv[key] ? t('promptHide') : `${t('promptShow')} · ${String((layer.system || '').length)}${t('charUnit')}`),
+                openAdv[key]
+                  ? h(
+                    'div',
+                    { className: 'tm-adv' },
+                    h(Field, { label: t('fSystem'), wide: true }, h('textarea', {
+                      className: 'tm-area',
+                      value: layer.system || '',
+                      rows: 3,
+                      spellCheck: false,
+                      onChange: (event) => patch(['layers', index, 'system'], event.target.value),
+                    })),
+                    h(Field, { label: t('fTemplate'), wide: true, hint: t('hintTpl') }, h('textarea', {
+                      className: 'tm-area',
+                      value: layer.template || '',
+                      rows: 4,
+                      spellCheck: false,
+                      onChange: (event) => patch(['layers', index, 'template'], event.target.value),
+                    })),
+                  )
+                  : null,
               )
               : null,
           )
         })
         : h('div', { className: 'tm-empty', key: 'ly-empty' }, t('emptyLayers'))
+
+      const presetPanel = h(
+        'div',
+        { className: 'tm-presets' },
+        h('span', { className: 'tm-note' }, t('presetHint')),
+        h(
+          'div',
+          { className: 'tm-preset-row' },
+          PRESETS.map((preset) =>
+            h(
+              'button',
+              { key: preset.id, type: 'button', className: 'tm-preset', onClick: () => addRow('endpoints', preset) },
+              preset.id === 'custom' ? t('presetCustom') : preset.label,
+            ),
+          ),
+        ),
+      )
 
       return h(
         'div',
@@ -828,19 +1062,47 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'tm-sec' },
-          h(SectionHead, { title: t('endpoints'), count: endpoints.length, actionLabel: t('addEndpoint'), onAdd: () => addRow('endpoints') }),
+          h(SectionHead, {
+            title: t('endpoints'),
+            count: endpoints.length,
+            actionLabel: t('addEndpoint'),
+            onAdd: () => setPresetOpen((open) => !open),
+            onToggleAll: endpoints.length ? () => toggleAll('endpoints', endpoints) : undefined,
+            allOpen: allOpen('endpoints', endpoints),
+            foldLabel: t('allFold'),
+            openLabel: t('allOpen'),
+          }),
+          presetOpen || !endpoints.length ? presetPanel : null,
           endpointCards,
         ),
         h(
           'div',
           { className: 'tm-sec' },
-          h(SectionHead, { title: t('models'), count: models.length, actionLabel: t('addModel'), onAdd: () => addRow('models') }),
+          h(SectionHead, {
+            title: t('models'),
+            count: models.length,
+            actionLabel: t('addModel'),
+            onAdd: () => addRow('models'),
+            onToggleAll: models.length ? () => toggleAll('models', models) : undefined,
+            allOpen: allOpen('models', models),
+            foldLabel: t('allFold'),
+            openLabel: t('allOpen'),
+          }),
           modelCards,
         ),
         h(
           'div',
           { className: 'tm-sec' },
-          h(SectionHead, { title: t('layers'), count: layers.length, actionLabel: t('addLayer'), onAdd: () => addRow('layers') }),
+          h(SectionHead, {
+            title: t('layers'),
+            count: layers.length,
+            actionLabel: t('addLayer'),
+            onAdd: () => addRow('layers'),
+            onToggleAll: layers.length ? () => toggleAll('layers', layers) : undefined,
+            allOpen: allOpen('layers', layers),
+            foldLabel: t('allFold'),
+            openLabel: t('allOpen'),
+          }),
           layerCards,
         ),
         h(
@@ -849,7 +1111,7 @@ window.__ModuleLoader__.load({
           h('div', { className: 'tm-sec-head' }, h('span', { className: 'tm-sec-title' }, t('global'))),
           h(
             'div',
-            { className: 'tm-card' },
+            { className: 'tm-card open' },
             h(
               'div',
               { className: 'tm-global' },
