@@ -252,7 +252,7 @@ if (!spec) {
     ]) {
       if (!rendered.includes(needle)) fail(`设置页里没有渲染出${label}（找不到「${needle}」）`)
     }
-    if (!/tm-suggest/.test(rendered)) fail('设置页没有渲染候选 ID 胶囊')
+    if (!/tm-combo-toggle/.test(rendered)) fail('「真实模型名」没有渲染成可输入下拉（找不到 .tm-combo-toggle）')
   }
 }
 

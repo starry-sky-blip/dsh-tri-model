@@ -209,6 +209,7 @@ window.__ModuleLoader__.load({
       resetConfirm: '放弃未保存的改动？',
       keyStored: '密钥在保存时写入 DSH 凭据库，设置文件里只留引用名。',
       doctorHint: '测连接：保存后在本会话发 /tri-doctor，插件会挨个打一次各端点上的模型，把延迟表贴回来。',
+      pickModel: '从候选里选（也可以直接输入）',
       pending: '项待修',
       charUnit: ' 字',
       presetHint: '选一个预设，地址和协议自动填好，只剩密钥要你填。',
@@ -287,6 +288,7 @@ window.__ModuleLoader__.load({
       resetConfirm: 'Discard unsaved changes?',
       keyStored: 'Keys are written to DSH credentials on save; the settings file keeps only a reference.',
       doctorHint: 'Connection check: after saving, send /tri-doctor in this session and the plugin will ping every model on every endpoint and report a latency table.',
+      pickModel: 'Pick from the list (typing still works)',
       pending: ' to fix',
       charUnit: ' chars',
       presetHint: 'Pick a preset; URL and protocol are filled in, only the key is yours.',
@@ -377,10 +379,15 @@ window.__ModuleLoader__.load({
 .tm-preset{font:inherit;font-size:11.5px;line-height:1;padding:6px 10px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);cursor:pointer;white-space:nowrap}
 .tm-preset:hover{border-color:var(--dsw-alias-brand-primary)}
 .tm-preset.active{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
-.tm-field-wrap{display:flex;flex-direction:column;gap:6px;min-width:0}
+.tm-combo{position:relative;display:flex;min-width:0}
+.tm-combo .tm-input{width:100%;padding-right:26px}
+.tm-combo-toggle{position:absolute;top:1px;right:1px;bottom:1px;width:24px;display:flex;align-items:center;justify-content:center;font:inherit;font-size:10px;line-height:1;padding:0;border:0;border-left:1px solid var(--dsw-alias-border-l2);border-radius:0 6px 6px 0;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
+.tm-combo-toggle:hover,.tm-combo-toggle.open{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
+.tm-combo-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;max-height:168px;overflow:auto;padding:4px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1);box-shadow:0 8px 24px rgba(0,0,0,.32)}
+.tm-combo-item{display:block;width:100%;text-align:left;font:inherit;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.6;padding:5px 8px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm-combo-item:hover{background:var(--dsw-alias-bg-layer-2)}
+.tm-combo-item.active{color:var(--dsw-alias-brand-primary)}
 .tm-tip{margin:0;line-height:1.6;color:var(--dsw-alias-label-secondary)}
-.tm-suggest{display:flex;flex-wrap:wrap;gap:6px}
-.tm-suggest .tm-preset{font-size:11px;padding:4px 8px;color:var(--dsw-alias-label-secondary)}
 .tm-confirm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--dsw-alias-state-warn-primary);border-radius:8px;font-size:12px}
 .tm-confirm-text{color:var(--dsw-alias-label-primary)}
 .tm-confirm .tm-btn{padding:5px 9px;font-size:11.5px}
@@ -498,8 +505,63 @@ window.__ModuleLoader__.load({
         placeholder: props.placeholder || '',
         spellCheck: false,
         autoFocus: props.autoFocus ? true : undefined,
+        onFocus: props.onFocus,
+        onBlur: props.onBlur,
         onChange: (event) => props.onChange(event.target.value),
       })
+    }
+
+    /**
+     * 可输入的下拉：既能直接打字，也能从候选里挑。
+     * 候选来自端点对应的供应商预设（比如火山 Coding Plan 的模型 ID）。
+     */
+    function ComboBox(props) {
+      const [open, setOpen] = React.useState(false)
+      const list = props.options || []
+      const close = () => setTimeout(() => setOpen(false), 160)
+      return h(
+        'div',
+        { className: 'tm-combo' },
+        h(TextInput, {
+          value: props.value,
+          placeholder: props.placeholder,
+          mono: props.mono,
+          bad: props.bad,
+          onChange: props.onChange,
+          onFocus: list.length ? () => setOpen(true) : undefined,
+          onBlur: list.length ? close : undefined,
+        }),
+        list.length
+          ? h('button', {
+              type: 'button',
+              className: `tm-combo-toggle${open ? ' open' : ''}`,
+              title: props.title || '',
+              'aria-label': props.title || '',
+              onMouseDown: (event) => {
+                event.preventDefault()
+                setOpen((value) => !value)
+              },
+            }, '▾')
+          : null,
+        open && list.length
+          ? h(
+              'div',
+              { className: 'tm-combo-list' },
+              list.map((id) =>
+                h('button', {
+                  key: id,
+                  type: 'button',
+                  className: `tm-combo-item${id === props.value ? ' active' : ''}`,
+                  onMouseDown: (event) => {
+                    event.preventDefault()
+                    props.onChange(id)
+                    setOpen(false)
+                  },
+                }, id),
+              ),
+            )
+          : null,
+      )
     }
 
     function Select(props) {
@@ -1006,33 +1068,15 @@ window.__ModuleLoader__.load({
                     placeholder: 'Kimi K3.1 Pro',
                     onChange: (next) => renameRow('models', index, 'label', next),
                   })),
-                  h(
-                    'div',
-                    { className: 'tm-field-wrap' },
-                    h(Field, { label: t('fModel') }, h(TextInput, {
-                      value: model.model,
-                      bad: !model.model && !isBlankModel(model),
-                      mono: true,
-                      placeholder: 'deepseek-v4.1-flash',
-                      onChange: (next) => renameRow('models', index, 'model', next),
-                    })),
-                    suggestFor(model.endpoint).length
-                      ? h(
-                        'div',
-                        { className: 'tm-suggest' },
-                        suggestFor(model.endpoint).map((id) => h(
-                          'button',
-                          {
-                            key: id,
-                            type: 'button',
-                            className: `tm-preset${id === model.model ? ' active' : ''}`,
-                            onClick: () => patch(['models', index, 'model'], id),
-                          },
-                          id,
-                        )),
-                      )
-                      : null,
-                  ),
+                  h(Field, { label: t('fModel') }, h(ComboBox, {
+                    value: model.model,
+                    bad: !model.model && !isBlankModel(model),
+                    mono: true,
+                    placeholder: 'deepseek-v4.1-flash',
+                    title: t('pickModel'),
+                    options: suggestFor(model.endpoint),
+                    onChange: (next) => patch(['models', index, 'model'], next),
+                  })),
                   h(Field, { label: t('fEndpoint') }, h(Select, {
                     value: model.endpoint || '',
                     options: endpointOptions,
