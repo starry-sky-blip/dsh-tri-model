@@ -42,13 +42,17 @@
 | 验证 | `client.js` 无头渲染冒烟（mock React + 焦点事件）：7 张卡 / 7 个折叠头 / 单行默认展开 / 9 个预设按钮，点预设新增一行后 8 张卡；Host 半边 4 工具 + 2 命令；`npm pack` 逐文件核对 |
 | 兼容 | 配置结构未变（只改设置页与新增命令），1.0.3 升 1.0.4 无需迁移 |
 
-## 待发布（1.0.5）
+## 已发布（2026-11-04 · 1.0.5）
 
 | 项 | 值 |
 |---|---|
+| 发布时间 | 2026-11-04T10:21:29Z（本地 18:21） |
+| tarball | `https://registry.npmjs.org/dsh-tri-model/-/dsh-tri-model-1.0.5.tgz` |
+| shasum | `c0da159c999bc300165a7a973400aabc1639a25d`（本地 `npm pack` 复算一致） |
+| 内容 | 14 文件 / 141 278 B 解包；`lib/models.js` 已进包；dependencies 为空，peer 仅 `@deepseek-ai/schemastery ^3.18.1` |
 | 改动 | ① 设置页：模型卡「标识」不再被长 hint 挤成竖排（`.tm-label-text` 不换行 + hint 省略号），模型卡改 2×2 栅格；② 「真实模型名」改成**可输入下拉**（ComboBox），撤掉输入框下的候选胶囊行；③ 预设扩到 17 个供应商；④ 面板底部常驻「测连接：保存后发 /tri-doctor」提示；⑤ 内置候选模型 ID 只保留**实测调通**的（火山方舟 plan 入口 10 个），其余一律不写；⑥ 新增 `/tri-models` 命令，向端点要 `/models` 现拉真实 ID |
 | 为什么 | 用户实测 `deepseek-v4.1` 在 plan 入口 404（「does not support the agent plan feature」），说明凭空写的候选会直接把人带沟里；同时候选胶囊行挤在字段下方很难看 |
-| 验证 | `npm run preflight`（含 `/tri-models` 的 URL/鉴权/解析断言）、`scripts/combo-test.mjs` 13 项、`scripts/render-test`、`scripts/host-test` 全 PASS；真实探测：`deepseek-v4.1` 404、`deepseek-v4.1-flash`/`kimi-k3.1-pro`/`glm-5.3` 等 200 |
+| 验证 | `npm test`（preflight + models-test 21 项 + command-test 15 项 + combo-test 13 项）全 PASS，另跑 render-test/host-test；真实探测 `deepseek-v4.1` 404、`deepseek-v4.1-flash`/`kimi-k3.1-pro`/`glm-5.3` 等 200；真机流水线 `tri_run`(draft) 1146ms 出成品；在 `desktop-t105` 隔离 profile 里从 npm 装 1.0.5 → `--dump-config` exit 0、4 工具 + `/tri,/tri-doctor,/tri-models` 全部注册 |
 | 兼容 | 配置结构未变；若此前填了不存在的模型 ID，需改成真实 ID（`/tri-models` 或服务商文档） |
 
 ## 剩余一步：awesome 收录
